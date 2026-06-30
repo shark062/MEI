@@ -13,8 +13,8 @@ router.post("/auth/register", async (req, res) => {
     res.status(400).json({ error: "Campos obrigatórios: name, email, password, cpf, cnpj" });
     return;
   }
-  if (password.length < 6) {
-    res.status(400).json({ error: "Senha deve ter pelo menos 6 caracteres" });
+  if (password.length < 3) {
+    res.status(400).json({ error: "Senha deve ter pelo menos 3 caracteres" });
     return;
   }
   try {
