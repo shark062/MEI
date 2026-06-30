@@ -1,22 +1,38 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: MEI Fácil API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: profile
+    description: User profile operations
+  - name: revenue
+    description: Revenue (faturamento) operations
+  - name: taxes
+    description: DAS tax payment operations
+  - name: documents
+    description: Document management operations
+  - name: alerts
+    description: Alert operations
+  - name: declaration
+    description: Annual declaration operations
+  - name: ai
+    description: AI assistant operations
+  - name: dashboard
+    description: Dashboard summary operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +40,640 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshInput"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary data
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /revenue:
+    get:
+      operationId: listRevenue
+      tags: [revenue]
+      summary: List revenue entries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueListResponse"
+    post:
+      operationId: createRevenue
+      tags: [revenue]
+      summary: Create a revenue entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Revenue"
+
+  /revenue/{id}:
+    get:
+      operationId: getRevenue
+      tags: [revenue]
+      summary: Get a revenue entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Revenue"
+    put:
+      operationId: updateRevenue
+      tags: [revenue]
+      summary: Update a revenue entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Revenue"
+    delete:
+      operationId: deleteRevenue
+      tags: [revenue]
+      summary: Delete a revenue entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /revenue/stats:
+    get:
+      operationId: getRevenueStats
+      tags: [revenue]
+      summary: Get revenue statistics and projections
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueStats"
+
+  /revenue/monthly:
+    get:
+      operationId: getMonthlyRevenue
+      tags: [revenue]
+      summary: Get monthly revenue breakdown for chart
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MonthlyRevenue"
+
+  /taxes:
+    get:
+      operationId: listTaxes
+      tags: [taxes]
+      summary: List DAS tax payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: status
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaxPayment"
+    post:
+      operationId: createTax
+      tags: [taxes]
+      summary: Create a DAS tax record
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxPayment"
+
+  /taxes/{id}/pay:
+    patch:
+      operationId: markTaxPaid
+      tags: [taxes]
+      summary: Mark a DAS tax as paid
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxPaymentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxPayment"
+
+  /taxes/simulate-penalty:
+    post:
+      operationId: simulatePenalty
+      tags: [taxes]
+      summary: Simulate DAS late payment penalty
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PenaltySimulationInput"
+      responses:
+        "200":
+          description: Simulation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PenaltySimulation"
+
+  /taxes/next-due:
+    get:
+      operationId: getNextDueTax
+      tags: [taxes]
+      summary: Get the next due DAS payment
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxPayment"
+
+  /documents:
+    get:
+      operationId: listDocuments
+      tags: [documents]
+      summary: List documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: folder
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+    post:
+      operationId: uploadDocument
+      tags: [documents]
+      summary: Upload a document (metadata only - file via multipart)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
+  /documents/{id}:
+    delete:
+      operationId: deleteDocument
+      tags: [documents]
+      summary: Delete a document
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: ["boolean", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}/read:
+    patch:
+      operationId: markAlertRead
+      tags: [alerts]
+      summary: Mark alert as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /declaration:
+    get:
+      operationId: getDeclaration
+      tags: [declaration]
+      summary: Get annual declaration summary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Declaration"
+
+  /declaration/checklist:
+    get:
+      operationId: getDeclarationChecklist
+      tags: [declaration]
+      summary: Get declaration checklist items
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistItem"
+
+  /declaration/checklist/{id}:
+    patch:
+      operationId: updateChecklistItem
+      tags: [declaration]
+      summary: Update checklist item status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistItem"
+
+  /ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: Send a message to the AI assistant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiMessageInput"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiMessage"
+
+  /ai/conversations:
+    get:
+      operationId: getAiConversations
+      tags: [ai]
+      summary: Get AI conversation history
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AiMessage"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +683,421 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    RegisterInput:
+      type: object
+      required: [name, email, password, cpf, cnpj]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        cpf:
+          type: string
+        cnpj:
+          type: string
+        phone:
+          type: ["string", "null"]
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    RefreshInput:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    ResetPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken, user]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+
+    UserProfile:
+      type: object
+      required: [id, name, email, cpf, cnpj]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        cpf:
+          type: string
+        cnpj:
+          type: string
+        phone:
+          type: ["string", "null"]
+        openingDate:
+          type: ["string", "null"]
+        activity:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        annualLimit:
+          type: number
+        onboardingCompleted:
+          type: boolean
+        createdAt:
+          type: string
+
+    ProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        openingDate:
+          type: ["string", "null"]
+        activity:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        annualLimit:
+          type: ["number", "null"]
+        onboardingCompleted:
+          type: ["boolean", "null"]
+
+    DashboardSummary:
+      type: object
+      required: [annualRevenue, annualLimit, usedPercent, status, nextDueTax, monthlyRevenue, unreadAlerts]
+      properties:
+        annualRevenue:
+          type: number
+        annualLimit:
+          type: number
+        usedPercent:
+          type: number
+        status:
+          type: string
+          enum: [regular, attention, risk]
+        nextDueTax:
+          $ref: "#/components/schemas/TaxPayment"
+        monthlyRevenue:
+          type: number
+        unreadAlerts:
+          type: integer
+        projectedAnnual:
+          type: number
+
+    Revenue:
+      type: object
+      required: [id, userId, amount, date, category, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        amount:
+          type: number
+        date:
+          type: string
+        category:
+          type: string
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    RevenueInput:
+      type: object
+      required: [amount, date, category]
+      properties:
+        amount:
+          type: number
+        date:
+          type: string
+        category:
+          type: string
+        description:
+          type: ["string", "null"]
+
+    RevenueUpdate:
+      type: object
+      properties:
+        amount:
+          type: ["number", "null"]
+        date:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+
+    RevenueListResponse:
+      type: object
+      required: [entries, total]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Revenue"
+        total:
+          type: number
+
+    RevenueStats:
+      type: object
+      required: [totalAnnual, totalMonthly, avgMonthly, projectedAnnual, usedPercent, annualLimit, monthsWithData]
+      properties:
+        totalAnnual:
+          type: number
+        totalMonthly:
+          type: number
+        avgMonthly:
+          type: number
+        projectedAnnual:
+          type: number
+        usedPercent:
+          type: number
+        annualLimit:
+          type: number
+        monthsWithData:
+          type: integer
+        alertLevel:
+          type: string
+          enum: [safe, warning, danger, exceeded]
+
+    MonthlyRevenue:
+      type: object
+      required: [month, year, total]
+      properties:
+        month:
+          type: integer
+        year:
+          type: integer
+        total:
+          type: number
+        label:
+          type: string
+
+    TaxPayment:
+      type: object
+      required: [id, userId, competence, dueDate, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        competence:
+          type: string
+        dueDate:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+        paidAt:
+          type: ["string", "null"]
+        daysUntilDue:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    TaxInput:
+      type: object
+      required: [competence, dueDate, amount]
+      properties:
+        competence:
+          type: string
+        dueDate:
+          type: string
+        amount:
+          type: number
+
+    TaxPaymentUpdate:
+      type: object
+      properties:
+        paidAt:
+          type: ["string", "null"]
+
+    PenaltySimulationInput:
+      type: object
+      required: [amount, daysLate]
+      properties:
+        amount:
+          type: number
+        daysLate:
+          type: integer
+
+    PenaltySimulation:
+      type: object
+      required: [originalAmount, fine, interest, total, daysLate]
+      properties:
+        originalAmount:
+          type: number
+        fine:
+          type: number
+        interest:
+          type: number
+        total:
+          type: number
+        daysLate:
+          type: integer
+
+    Document:
+      type: object
+      required: [id, userId, name, folder, fileType, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        name:
+          type: string
+        folder:
+          type: string
+          enum: [das, notas_fiscais, declaracoes, certidoes, outros]
+        fileType:
+          type: string
+        fileSize:
+          type: ["integer", "null"]
+        fileUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    DocumentInput:
+      type: object
+      required: [name, folder, fileType]
+      properties:
+        name:
+          type: string
+        folder:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: ["integer", "null"]
+        fileUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+
+    Alert:
+      type: object
+      required: [id, userId, type, title, description, priority, isRead, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [vencimento, faturamento, documento, regularizacao]
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+
+    Declaration:
+      type: object
+      required: [year, annualRevenue, monthsRegistered, status]
+      properties:
+        year:
+          type: integer
+        annualRevenue:
+          type: number
+        monthsRegistered:
+          type: integer
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+        completionPercent:
+          type: number
+
+    ChecklistItem:
+      type: object
+      required: [id, userId, year, label, completed]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        year:
+          type: integer
+        label:
+          type: string
+        completed:
+          type: boolean
+
+    ChecklistUpdate:
+      type: object
+      required: [completed]
+      properties:
+        completed:
+          type: boolean
+
+    AiMessageInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    AiMessage:
+      type: object
+      required: [id, userId, role, content, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        createdAt:
+          type: string
