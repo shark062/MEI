@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import NotFound from "@/pages/not-found";
 
 import Landing from "@/pages/landing";
@@ -20,7 +21,8 @@ import AiChat from "@/pages/ai";
 import Profile from "@/pages/profile";
 import Agenda from "@/pages/agenda";
 import Receipts from "@/pages/receipts";
-import Admin from "@/pages/admin";
+import AdminPage from "@/pages/admin";
+import AdminLogin from "@/pages/admin-login";
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -32,25 +34,20 @@ const queryClient = new QueryClient({
     }
   }),
   defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
+    queries: { retry: 1, refetchOnWindowFocus: false },
   },
 });
 
-function ProtectedRoute({ component: Component }: { component: any }) {
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Redirect to="/login" />;
+  return <AppLayout><Component /></AppLayout>;
+}
 
-  if (!isAuthenticated) {
-    return <Redirect to="/login" />;
-  }
-
-  return (
-    <AppLayout>
-      <Component />
-    </AppLayout>
-  );
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const adminToken = localStorage.getItem("adminToken");
+  if (!adminToken) return <Redirect to="/admin-login" />;
+  return <AdminLayout><Component /></AdminLayout>;
 }
 
 function Router() {
@@ -59,6 +56,7 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/admin-login" component={AdminLogin} />
       <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/revenue" component={() => <ProtectedRoute component={Revenue} />} />
@@ -70,7 +68,7 @@ function Router() {
       <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
       <Route path="/agenda" component={() => <ProtectedRoute component={Agenda} />} />
       <Route path="/receipts" component={() => <ProtectedRoute component={Receipts} />} />
-      <Route path="/admin" component={() => <ProtectedRoute component={Admin} />} />
+      <Route path="/admin" component={() => <AdminRoute component={AdminPage} />} />
       <Route component={NotFound} />
     </Switch>
   );

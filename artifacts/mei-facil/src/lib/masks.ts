@@ -2,11 +2,7 @@ export function maskCurrency(value: string): string {
   const digits = value.replace(/\D/g, "");
   if (!digits || digits === "0") return "";
   const number = parseInt(digits, 10);
-  return new Intl.NumberFormat("pt-BR", {
-    style: "decimal",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(number);
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export function currencyToNumber(value: string): number {

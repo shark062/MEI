@@ -1,28 +1,57 @@
 import { Router } from "express";
 import { db, usersTable, revenueTable, alertsTable, activityLogTable } from "@workspace/db";
 import { eq, sql, desc, gte } from "drizzle-orm";
-import { authMiddleware, type AuthRequest } from "../middlewares/auth";
+import jwt from "jsonwebtoken";
 import { logger } from "../lib/logger";
+import type { Request, Response, NextFunction } from "express";
 
 const router = Router();
 
-function adminOnly(req: AuthRequest, res: any, next: any) {
-  // Admin check: userId === 1 or any future role system
-  // For now, only the first registered user (id=1) has admin access
-  if (req.userId !== 1) {
-    res.status(403).json({ error: "Acesso restrito a administradores" });
-    return;
-  }
-  next();
+const ADMIN_EMAIL = "admin@meifacil.dev";
+const ADMIN_PASSWORD = "MeiFacil@Dev2024";
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || "mei-facil-admin-secret-dev-2024";
+
+interface AdminRequest extends Request {
+  isAdmin?: boolean;
 }
 
-router.get("/admin/stats", authMiddleware, adminOnly, async (req: AuthRequest, res) => {
+function adminMiddleware(req: AdminRequest, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Token de admin não fornecido" });
+    return;
+  }
+  const token = authHeader.substring(7);
+  try {
+    const decoded = jwt.verify(token, ADMIN_JWT_SECRET) as { admin: boolean };
+    if (!decoded.admin) throw new Error("Not admin token");
+    req.isAdmin = true;
+    next();
+  } catch {
+    res.status(401).json({ error: "Token de admin inválido ou expirado" });
+  }
+}
+
+router.post("/admin/login", (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    res.status(400).json({ error: "Email e senha são obrigatórios" });
+    return;
+  }
+  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+    res.status(401).json({ error: "Credenciais de admin inválidas" });
+    return;
+  }
+  const adminToken = jwt.sign({ admin: true }, ADMIN_JWT_SECRET, { expiresIn: "8h" });
+  res.json({ adminToken });
+});
+
+router.get("/admin/stats", adminMiddleware, async (_req: AdminRequest, res: Response) => {
   try {
     const [{ totalUsers }] = await db.select({ totalUsers: sql<number>`COUNT(*)` }).from(usersTable);
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
 
     const [{ newUsers }] = await db.select({ newUsers: sql<number>`COUNT(*)` })
       .from(usersTable)

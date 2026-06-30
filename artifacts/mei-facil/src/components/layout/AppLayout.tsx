@@ -13,7 +13,6 @@ import {
   Menu,
   Calendar,
   FileSignature,
-  ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -29,7 +28,6 @@ const NAV_ITEMS = [
   { href: "/alerts", label: "Alertas", icon: Bell },
   { href: "/ai", label: "Assistente IA", icon: MessageSquare },
   { href: "/profile", label: "Meu Perfil", icon: User },
-  { href: "/admin", label: "Admin", icon: ShieldAlert },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -69,7 +67,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r bg-card">
         <div className="p-6 pb-4">
           <h1 className="text-2xl font-bold text-primary">MEI Fácil</h1>
@@ -80,7 +77,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile Header & Content */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between p-4 border-b bg-card">
           <h1 className="text-xl font-bold text-primary">MEI Fácil</h1>
