@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,16 +7,17 @@ import { useGetProfile, getGetProfileQueryKey, useUpdateProfile } from "@workspa
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { maskCpf, maskCnpj, maskPhone, maskDate, onlyDigits, dateMaskToIso, isoToDateMask } from "@/lib/masks";
 
 const step1Schema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
-  cpf: z.string().min(11, "CPF inválido"),
-  cnpj: z.string().min(14, "CNPJ inválido"),
+  cpf: z.string().refine((v) => onlyDigits(v).length === 11, "CPF deve ter 11 dígitos"),
+  cnpj: z.string().refine((v) => onlyDigits(v).length === 14, "CNPJ deve ter 14 dígitos"),
   phone: z.string().optional(),
 });
 
@@ -38,70 +39,107 @@ export default function Onboarding() {
   const { user } = useAuth();
 
   const { data: profile, isLoading } = useGetProfile({
-    query: {
-      queryKey: getGetProfileQueryKey(),
-    }
+    query: { queryKey: getGetProfileQueryKey() },
   });
 
   const updateProfileMutation = useUpdateProfile();
 
   const form1 = useForm<Step1Form>({
     resolver: zodResolver(step1Schema),
-    values: {
-      name: profile?.name || user?.name || "",
-      cpf: profile?.cpf || user?.cpf || "",
-      cnpj: profile?.cnpj || user?.cnpj || "",
-      phone: profile?.phone || user?.phone || "",
+    defaultValues: {
+      name: "",
+      cpf: "",
+      cnpj: "",
+      phone: "",
     },
   });
 
   const form2 = useForm<Step2Form>({
     resolver: zodResolver(step2Schema),
-    values: {
-      openingDate: profile?.openingDate || "",
-      activity: profile?.activity || "",
-      category: profile?.category || "",
-      annualLimit: profile?.annualLimit || 81000,
+    defaultValues: {
+      openingDate: "",
+      activity: "",
+      category: "",
+      annualLimit: 81000,
     },
   });
 
-  const onStep1Submit = (data: Step1Form) => {
-    updateProfileMutation.mutate({ data }, {
-      onSuccess: () => {
-        setStep(2);
-      },
-      onError: () => {
-        toast({ title: "Erro", description: "Não foi possível salvar os dados.", variant: "destructive" });
-      }
+  useEffect(() => {
+    if (!profile) return;
+    form1.reset({
+      name: profile.name || user?.name || "",
+      cpf: maskCpf(profile.cpf || user?.cpf || ""),
+      cnpj: maskCnpj(profile.cnpj || user?.cnpj || ""),
+      phone: maskPhone(profile.phone || user?.phone || ""),
     });
+    form2.reset({
+      openingDate: isoToDateMask(profile.openingDate || ""),
+      activity: profile.activity || "",
+      category: profile.category || "",
+      annualLimit: profile.annualLimit || 81000,
+    });
+  }, [profile]);
+
+  const onStep1Submit = (data: Step1Form) => {
+    updateProfileMutation.mutate(
+      {
+        data: {
+          ...data,
+          cpf: onlyDigits(data.cpf),
+          cnpj: onlyDigits(data.cnpj),
+          phone: data.phone ? onlyDigits(data.phone) : undefined,
+        },
+      },
+      {
+        onSuccess: () => setStep(2),
+        onError: () =>
+          toast({ title: "Erro", description: "Não foi possível salvar os dados.", variant: "destructive" }),
+      }
+    );
   };
 
   const onStep2Submit = (data: Step2Form) => {
-    updateProfileMutation.mutate({ data: { ...data, onboardingCompleted: true } }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
-        toast({ title: "Sucesso", description: "Configuração concluída!" });
-        setLocation("/dashboard");
-      },
-      onError: () => {
-        toast({ title: "Erro", description: "Não foi possível finalizar a configuração.", variant: "destructive" });
+    const openingDateIso = data.openingDate ? dateMaskToIso(data.openingDate) : undefined;
+    updateProfileMutation.mutate(
+      { data: { ...data, openingDate: openingDateIso || undefined, onboardingCompleted: true } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
+          toast({ title: "Configuração concluída!", description: "Bem-vindo ao MEI Fácil." });
+          setLocation("/dashboard");
+        },
+        onError: () =>
+          toast({ title: "Erro", description: "Não foi possível finalizar a configuração.", variant: "destructive" }),
       }
-    });
+    );
   };
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin w-8 h-8 text-primary" />
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-lg">
         <CardHeader>
+          <div className="flex gap-2 mb-2">
+            {[1, 2].map((n) => (
+              <div
+                key={n}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${n <= step ? "bg-primary" : "bg-muted-foreground/20"}`}
+              />
+            ))}
+          </div>
           <CardTitle className="text-2xl font-bold">Configure seu MEI Fácil</CardTitle>
           <CardDescription>
             {step === 1 ? "Etapa 1 de 2: Seus dados pessoais" : "Etapa 2 de 2: Dados do seu negócio"}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           {step === 1 ? (
             <Form {...form1}>
@@ -113,12 +151,13 @@ export default function Onboarding() {
                     <FormItem>
                       <FormLabel>Nome Completo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Seu nome" {...field} />
+                        <Input placeholder="Seu nome completo" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form1.control}
                   name="cpf"
@@ -126,12 +165,20 @@ export default function Onboarding() {
                     <FormItem>
                       <FormLabel>CPF</FormLabel>
                       <FormControl>
-                        <Input placeholder="000.000.000-00" {...field} />
+                        <Input
+                          placeholder="000.000.000-00"
+                          value={field.value}
+                          onChange={(e) => field.onChange(maskCpf(e.target.value))}
+                          onBlur={field.onBlur}
+                          maxLength={14}
+                          inputMode="numeric"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form1.control}
                   name="cnpj"
@@ -139,12 +186,20 @@ export default function Onboarding() {
                     <FormItem>
                       <FormLabel>CNPJ</FormLabel>
                       <FormControl>
-                        <Input placeholder="00.000.000/0000-00" {...field} />
+                        <Input
+                          placeholder="00.000.000/0000-00"
+                          value={field.value}
+                          onChange={(e) => field.onChange(maskCnpj(e.target.value))}
+                          onBlur={field.onBlur}
+                          maxLength={18}
+                          inputMode="numeric"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form1.control}
                   name="phone"
@@ -152,15 +207,23 @@ export default function Onboarding() {
                     <FormItem>
                       <FormLabel>Telefone (opcional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="(00) 00000-0000" {...field} />
+                        <Input
+                          placeholder="(00) 00000-0000"
+                          value={field.value}
+                          onChange={(e) => field.onChange(maskPhone(e.target.value))}
+                          onBlur={field.onBlur}
+                          maxLength={15}
+                          inputMode="numeric"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <Button type="submit" className="w-full mt-6" disabled={updateProfileMutation.isPending}>
-                  {updateProfileMutation.isPending ? <Loader2 className="animate-spin mr-2" /> : null}
-                  Próximo
+                  {updateProfileMutation.isPending && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+                  Próximo →
                 </Button>
               </form>
             </Form>
@@ -174,12 +237,20 @@ export default function Onboarding() {
                     <FormItem>
                       <FormLabel>Data de Abertura (opcional)</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input
+                          placeholder="DD/MM/AAAA"
+                          value={field.value}
+                          onChange={(e) => field.onChange(maskDate(e.target.value))}
+                          onBlur={field.onBlur}
+                          maxLength={10}
+                          inputMode="numeric"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form2.control}
                   name="activity"
@@ -193,6 +264,7 @@ export default function Onboarding() {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form2.control}
                   name="category"
@@ -206,6 +278,7 @@ export default function Onboarding() {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form2.control}
                   name="annualLimit"
@@ -213,18 +286,24 @@ export default function Onboarding() {
                     <FormItem>
                       <FormLabel>Limite Anual (R$)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                        <Input
+                          type="number"
+                          step="1000"
+                          min={0}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div className="flex gap-4 mt-6">
+
+                <div className="flex gap-3 mt-6">
                   <Button type="button" variant="outline" onClick={() => setStep(1)} className="w-full">
-                    Voltar
+                    ← Voltar
                   </Button>
                   <Button type="submit" className="w-full" disabled={updateProfileMutation.isPending}>
-                    {updateProfileMutation.isPending ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {updateProfileMutation.isPending && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
                     Finalizar
                   </Button>
                 </div>
