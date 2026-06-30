@@ -22,10 +22,12 @@ router.get("/profile", authMiddleware, async (req: AuthRequest, res) => {
 });
 
 router.put("/profile", authMiddleware, async (req: AuthRequest, res) => {
-  const { name, phone, openingDate, activity, category, annualLimit, onboardingCompleted } = req.body;
+  const { name, cpf, cnpj, phone, openingDate, activity, category, annualLimit, onboardingCompleted } = req.body;
   try {
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
+    if (cpf !== undefined) updateData.cpf = cpf;
+    if (cnpj !== undefined) updateData.cnpj = cnpj;
     if (phone !== undefined) updateData.phone = phone;
     if (openingDate !== undefined) updateData.openingDate = openingDate;
     if (activity !== undefined) updateData.activity = activity;
