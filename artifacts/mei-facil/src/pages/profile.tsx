@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGetProfile, getGetProfileQueryKey, useUpdateProfile } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +32,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const initialized = useRef(false);
 
   const { data: profile, isLoading } = useGetProfile({
     query: { queryKey: getGetProfileQueryKey() },
@@ -53,8 +54,10 @@ export default function ProfilePage() {
     },
   });
 
+  // Initialize only once — prevents React Query refetches from wiping typed values
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || initialized.current) return;
+    initialized.current = true;
     form.reset({
       name: profile.name || "",
       cpf: maskCpf(profile.cpf || ""),

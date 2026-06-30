@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,6 +43,7 @@ export default function Onboarding() {
   });
 
   const updateProfileMutation = useUpdateProfile();
+  const initialized = useRef(false);
 
   const form1 = useForm<Step1Form>({
     resolver: zodResolver(step1Schema),
@@ -64,8 +65,10 @@ export default function Onboarding() {
     },
   });
 
+  // Initialize only once — prevents React Query refetches from wiping typed values
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || initialized.current) return;
+    initialized.current = true;
     form1.reset({
       name: profile.name || user?.name || "",
       cpf: maskCpf(profile.cpf || user?.cpf || ""),
