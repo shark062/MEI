@@ -9,6 +9,11 @@ import documentsRouter from "./documents";
 import alertsRouter from "./alerts";
 import declarationRouter from "./declaration";
 import aiRouter from "./ai";
+import scoreRouter from "./score";
+import calendarRouter from "./calendar";
+import receiptsRouter from "./receipts";
+import adminRouter from "./admin";
+import activityRouter from "./activity";
 
 const router: IRouter = Router();
 
@@ -22,5 +27,10 @@ router.use(documentsRouter);
 router.use(alertsRouter);
 router.use(declarationRouter);
 router.use(aiRouter);
+router.use(scoreRouter);
+router.use(calendarRouter);
+router.use(receiptsRouter);
+router.use(adminRouter);
+router.use(activityRouter);
 
 export default router;

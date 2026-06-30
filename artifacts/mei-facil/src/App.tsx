@@ -18,6 +18,9 @@ import Declaration from "@/pages/declaration";
 import Alerts from "@/pages/alerts";
 import AiChat from "@/pages/ai";
 import Profile from "@/pages/profile";
+import Agenda from "@/pages/agenda";
+import Receipts from "@/pages/receipts";
+import Admin from "@/pages/admin";
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -27,12 +30,18 @@ const queryClient = new QueryClient({
         window.location.href = "/login";
       }
     }
-  })
+  }),
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
 function ProtectedRoute({ component: Component }: { component: any }) {
   const { isAuthenticated } = useAuth();
-  
+
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
   }
@@ -59,6 +68,9 @@ function Router() {
       <Route path="/alerts" component={() => <ProtectedRoute component={Alerts} />} />
       <Route path="/ai" component={() => <ProtectedRoute component={AiChat} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+      <Route path="/agenda" component={() => <ProtectedRoute component={Agenda} />} />
+      <Route path="/receipts" component={() => <ProtectedRoute component={Receipts} />} />
+      <Route path="/admin" component={() => <ProtectedRoute component={Admin} />} />
       <Route component={NotFound} />
     </Switch>
   );
