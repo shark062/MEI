@@ -12,8 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
-
 interface AdminStats {
   totalUsers: number;
   newUsers: number;
@@ -40,7 +38,7 @@ interface AdminStats {
 
 function adminFetch<T>(path: string): Promise<T> {
   const token = localStorage.getItem("adminToken");
-  return fetch(`${API_BASE}${path}`, {
+  return fetch(path, {
     headers: { Authorization: `Bearer ${token}` },
   }).then(async (res) => {
     if (res.status === 401) {
