@@ -39,7 +39,12 @@ export default function Onboarding() {
   const { user } = useAuth();
 
   const { data: profile, isLoading } = useGetProfile({
-    query: { queryKey: getGetProfileQueryKey() },
+    query: {
+      queryKey: getGetProfileQueryKey(),
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      staleTime: Infinity,
+    },
   });
 
   const updateProfileMutation = useUpdateProfile();
