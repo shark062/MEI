@@ -1,3 +1,19 @@
+export function maskCurrency(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (!digits || digits === "0") return "";
+  const number = parseInt(digits, 10);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "decimal",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(number);
+}
+
+export function currencyToNumber(value: string): number {
+  const digits = value.replace(/\D/g, "");
+  return digits ? parseInt(digits, 10) : 0;
+}
+
 export function maskCpf(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 3) return digits;

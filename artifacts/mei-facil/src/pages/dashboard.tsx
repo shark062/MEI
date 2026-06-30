@@ -1,4 +1,4 @@
-import { useGetDashboardSummary, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
+import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { AlertCircle, ArrowRight, CheckCircle2, AlertTriangle, FileText, PlusCircle, Calendar } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, AlertTriangle, FileText, PlusCircle, Calendar, UserCircle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Dashboard() {
@@ -16,6 +16,18 @@ export default function Dashboard() {
       queryKey: getGetDashboardSummaryQueryKey()
     }
   });
+
+  const { data: profile } = useGetProfile({
+    query: {
+      queryKey: getGetProfileQueryKey(),
+      refetchOnWindowFocus: false,
+      staleTime: 60_000,
+    },
+  });
+
+  const isProfileIncomplete =
+    profile !== undefined &&
+    (!profile?.name || !profile?.cpf || !profile?.cnpj);
 
   const getStatusBadge = (status?: string) => {
     switch(status) {
@@ -49,6 +61,25 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      {isProfileIncomplete && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 px-4 py-3">
+          <UserCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              Complete seu cadastro para liberar todos os recursos
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+              Algumas funcionalidades ficam limitadas sem os dados completos do perfil.
+            </p>
+          </div>
+          <Link href="/onboarding">
+            <Button size="sm" variant="outline" className="shrink-0 border-amber-400 text-amber-800 hover:bg-amber-100 dark:text-amber-300 dark:border-amber-600 dark:hover:bg-amber-900/30">
+              Completar →
+            </Button>
+          </Link>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Olá, {user?.name?.split(' ')[0]}</h1>
